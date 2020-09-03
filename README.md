@@ -8,8 +8,7 @@ python基础代码运行可视化：http://www.pythontutor.com/visualize.html#mo
 
 程序设计思想与方法：https://wizardforcel.gitbooks.io/sjtu-cs902-courseware/content/1.html
 
-machine_learning:
-
+机器学习：
 https://github.com/apachecn/MachineLearning
 
 https://github.com/allmachinelearning/MachineLearning
