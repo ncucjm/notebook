@@ -20,6 +20,6 @@ pandas：https://pda.readthedocs.io/en/latest/chp5.html
 
 Awesome python-nlp:https://github.com/keon/awesome-nlp#user-content-python
 
-Awesome python-nlp(Chinees):https://github.com/crownpku/Awesome-Chinese-NLP
+Awesome python-nlp(Chinese):https://github.com/crownpku/Awesome-Chinese-NLP
 
 python自然语言处理(第二版)：https://www.yiyibooks.cn/yiyi/nltk_python/index.html
