@@ -1,6 +1,7 @@
 ## web工具
 
 ipynb文件显示：https://nbviewer.jupyter.org/
+
 python基础代码运行可视化：http://www.pythontutor.com/visualize.html#mode=edit
 
 ## 电子教材
@@ -10,7 +11,9 @@ python基础代码运行可视化：http://www.pythontutor.com/visualize.html#mo
 machine_learning:
 
 https://github.com/apachecn/MachineLearning
+
 https://github.com/allmachinelearning/MachineLearning
+
 http://www.huaxiaozhuan.com/
 
 概率论与数理统计：https://seeing-theory.brown.edu/cn.html#secondPage
