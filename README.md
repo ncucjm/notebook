@@ -9,11 +9,12 @@ python基础代码运行可视化：http://www.pythontutor.com/visualize.html#mo
 程序设计思想与方法：https://wizardforcel.gitbooks.io/sjtu-cs902-courseware/content/1.html
 
 机器学习：
-https://github.com/apachecn/MachineLearning
 
-https://github.com/allmachinelearning/MachineLearning
+    https://github.com/apachecn/MachineLearning
 
-http://www.huaxiaozhuan.com/
+    https://github.com/allmachinelearning/MachineLearning
+
+    http://www.huaxiaozhuan.com/
 
 概率论与数理统计：https://seeing-theory.brown.edu/cn.html#secondPage
 
