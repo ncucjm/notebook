@@ -54,8 +54,8 @@ class Evolution_Trainer(Trainer,RL_Trainer):
         self.cycle = 0
         self.args = args
         self.random_seed = args.random_seed
-        self.population = deque()
-        self.accuracies = deque()
+        self.population = []
+        self.accuracies = []
         self.population_size = args.population_size
         self.sample_size = args.sample_size
         self.cycles = args.cycles

@@ -121,7 +121,7 @@ class RL_Trainer(object):
             if sample_num is None:
                 sample_num = self.args.derive_num_sample
             gnn_list, _, entropies = self.controller.sample(sample_num, with_details=True)
-            accuracies = deque()
+            accuracies = []
 
             epoch = 0
             for action in gnn_list:
@@ -155,7 +155,7 @@ class RL_Trainer(object):
             for individual, ind_acc in zip(gnn_list, accuracies):
                 print("individual:", individual, " val_score:", ind_acc)
             # gnn_structure　基因编码
-            population = deque()
+            population = []
             for gnn_structure in gnn_list:
                 i = 0
                 single = []

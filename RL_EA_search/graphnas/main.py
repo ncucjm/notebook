@@ -31,7 +31,7 @@ def register_default_args(parser):
     parser.add_argument('--mutation_mode', type=str, default='point_p', help='point_p, point_none')
     parser.add_argument('--mutation_p', type=float, default=0.2, help='[0-1]')
     parser.add_argument('--updating_mode', type=str, default="none-age", help='age,none-age')
-    parser.add_argument('--initialize_mode', type=str, default="random", help='random,RL')
+    parser.add_argument('--initialize_mode', type=str, default="RL", help='random,RL')
 
     # test
     parser.add_argument('--cycles', type=int, default=2, help='Evolution cycles')
