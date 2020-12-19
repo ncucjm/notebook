@@ -16,12 +16,7 @@ def build_args():
     return args
 
 def register_default_args(parser):
-    parser.add_argument('--optimizer', type=str, default='EA',
-                        choices=['EA', 'RL', 'RS', 'GS'],
-                        help='EA: Evolutionary algorithm,\
-                              RL: Reinforcement Learning algorithm\
-                              RS: Random Search algorithm\
-                              GS: Grid Search algorithm')
+
     parser.add_argument('--mode', type=str, default='train',
                         choices=['train', 'derive'],
                         help='train: Training GraphNAS,\
@@ -36,12 +31,7 @@ def register_default_args(parser):
     parser.add_argument('--mutation_mode', type=str, default='point_p', help='point_p, point_none')
     parser.add_argument('--mutation_p', type=float, default=0.2, help='[0-1]')
     parser.add_argument('--updating_mode', type=str, default="none-age", help='age,none-age')
-
-    # parser.add_argument('--selection_mode', type=str, default='random', help='random, wheel')
-    # parser.add_argument('--crossover_mode', type=str, default='none', help='point, none')
-    # parser.add_argument('--mutation_mode', type=str, default='point_none', help='point_p, point_none')
-    # parser.add_argument('--mutation_p', type=float, default=0.2, help='[0-1]')
-    # parser.add_argument('--updating_mode', type=str, default="age", help='age,none-age')
+    parser.add_argument('--initialize_mode', type=str, default="random", help='random,RL')
 
     # test
     parser.add_argument('--cycles', type=int, default=2, help='Evolution cycles')
@@ -161,16 +151,7 @@ def main(args):  # pylint:disable=redefined-outer-name
 
     utils.makedirs(args.dataset)
 
-    if args.optimizer == 'EA':
-        trainer = Evolution_Trainer(args)
-    elif args.optimizer == 'RL':
-        trainer = RL_Trainer(args)
-    elif args.optimizer == 'GS':
-        trainer = GridSearch_Trainer(args)
-    elif args.optimizer == 'RS':
-        trainer = RandomSearch_Trainer(args)
-    else:
-        raise Exception("[!] Optimizer not found: ", args.optimizer)
+    trainer = Evolution_Trainer(args)
 
     if args.mode == 'train':
         trainer.train()

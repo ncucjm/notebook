@@ -6,17 +6,14 @@ import numpy as np
 import scipy.signal
 import graphnas.utils.tensor_utils as utils
 from graphnas_variants.macro_graphnas.pyg.pyg_gnn_model_manager import GeoCitationManager
-
+import  time
 logger = utils.get_logger()
 
 
 def discount(x, amount):
     return scipy.signal.lfilter([1], [1, -amount], x[::-1], axis=0)[::-1]
 
-
 history = []
-
-
 def scale(value, last_k=10, scale_value=1):
     '''
     scale value into [-scale_value, scale_value], according last_k history
@@ -34,6 +31,22 @@ def _get_optimizer(name):
 
     return optim
 
+def experiment_data_save(name,time_list,acc_list):
+    path = path_get()[1]
+    with open(path+"/"+name, "w") as f:
+        f.write(str(time_list))
+        f.write("\n"+str(acc_list))
+    print("the ", name, " have written")
+
+
+def path_get():
+    # 当前文件目录
+    current_path = os.path.abspath('')
+    # 当前文件夹父目录
+    father_path = os.path.abspath(os.path.dirname(current_path))
+    # corpus_path = os.path.join(father_path, corpus)
+    return father_path, current_path
+
 class RL_Trainer(object):
 
     def __init__(self, args):
@@ -48,6 +61,11 @@ class RL_Trainer(object):
         self.submodel_manager = None
         self.controller = None
         self.build_model()  # build controller and sub-model
+        self.RL_train_time = []
+        self.RL_search_time = []
+        self.RL_train_acc = []
+        self.RL_search_acc = []
+
 
         controller_optimizer = _get_optimizer(self.args.controller_optim)
         self.controller_optim = controller_optimizer(self.controller.parameters(), lr=self.args.controller_lr)
@@ -91,7 +109,6 @@ class RL_Trainer(object):
     def train(self, action_list):
         # Training the controller parameters theta
         self.train_controller()
-        # 从训练好的controller中搜索出种群k,并计算其acc_scores
         print("*" * 35, "using controller search the initialize population", "*" * 35)
         populations, accuracies = self.derive(self.args.population_size, action_list)
         print("*" * 35, "the search DONE", "*" * 35)
@@ -106,12 +123,35 @@ class RL_Trainer(object):
             gnn_list, _, entropies = self.controller.sample(sample_num, with_details=True)
             accuracies = deque()
 
+            epoch = 0
             for action in gnn_list:
+                once_RL_search_start_time = time.time()
+
                 gnn = self.form_gnn_info(action)
                 reward = self.submodel_manager.test_with_param(gnn, format=self.args.format,
                                                                with_retrain=self.with_retrain)
                 acc_score = reward[1]
                 accuracies.append(acc_score)
+
+                once_RL_search_end_time = time.time()
+
+                print("the", epoch, "epcoh controller train time: ",
+                      once_RL_search_end_time - once_RL_search_start_time, 's')
+
+                if epoch == 0:
+                    self.RL_search_time.append(once_RL_search_start_time)
+                    self.RL_search_time.append(once_RL_search_end_time)
+                    self.RL_search_acc.append(acc_score)
+                else:
+                    self.RL_search_time.append(once_RL_search_end_time)
+                    self.RL_search_acc.append(acc_score)
+
+                epoch += 1
+            father_path = path_get()[0]
+            experiment_data_save("controler_search.txt", self.RL_search_time, self.RL_search_acc)
+            print("all RL search time list: ", self.RL_search_time)
+            print("all RL search acc list: ", self.RL_search_acc)
+
             for individual, ind_acc in zip(gnn_list, accuracies):
                 print("individual:", individual, " val_score:", ind_acc)
             # gnn_structure　基因编码
@@ -144,17 +184,17 @@ class RL_Trainer(object):
         reward_list = []
         for gnn in gnn_list:
             gnn = self.form_gnn_info(gnn)
-            reward = \
-                self.submodel_manager.test_with_param(gnn,
+            reward = self.submodel_manager.test_with_param(gnn,
                                                       format=self.args.format,
                                                       with_retrain=self.with_retrain)
 
             if reward is None:  # cuda error hanppened
                 reward = 0
             else:
-                reward = reward[0]
+                rewards = reward[0]#奖励计算正确
 
-            reward_list.append(reward)
+            reward_list.append(rewards)
+            acc_validation = reward[1]
 
         if self.args.entropy_mode == 'reward':
             rewards = reward_list + self.args.entropy_coeff * entropies
@@ -163,7 +203,7 @@ class RL_Trainer(object):
         else:
             raise NotImplementedError(f'Unkown entropy mode: {self.args.entropy_mode}')
 
-        return rewards, hidden
+        return rewards, hidden, acc_validation
 
     def train_controller(self):
         """
@@ -181,6 +221,9 @@ class RL_Trainer(object):
         hidden = self.controller.init_hidden(self.args.batch_size)
         total_loss = 0
         for step in range(self.args.controller_max_step):
+            #contraller训练一次的时间
+            once_controller_train_start_time = time.time()
+
             # sample graphnas
             structure_list, log_probs, entropies = self.controller.sample(with_details=True)
 
@@ -190,10 +233,8 @@ class RL_Trainer(object):
             torch.cuda.empty_cache()
 
             if results:  # has reward
-                rewards, hidden = results
+                rewards, hidden, acc = results
             else:
-                # CUDA Error happens, drop structure
-                # and step into next iteration
                 continue
 
             # discount
@@ -236,8 +277,21 @@ class RL_Trainer(object):
 
             self.controller_step += 1
             torch.cuda.empty_cache()
+            once_controller_train_end_time = time.time()
+            print("the", step, "epcoh controller train time: ",
+                  once_controller_train_end_time-once_controller_train_start_time, "s")
 
+            if step == 0:
+                self.RL_train_time.append(once_controller_train_start_time)
+                self.RL_train_time.append(once_controller_train_end_time)
+                self.RL_train_acc.append(acc)
+            else:
+                self.RL_train_time.append(once_controller_train_end_time)
+                self.RL_train_acc.append(acc)
+        print("all RL train time list: ", self.RL_train_time)
+        print("all RL train acc list: ", self.RL_train_acc)
         print("*" * 35, "training controller over", "*" * 35)
+        experiment_data_save("controler_train.txt", self.RL_train_time, self.RL_train_acc)
 
     def evaluate(self, gnn):
         """
