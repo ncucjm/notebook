@@ -67,10 +67,18 @@ class Evolution_Trainer(Trainer,RL_Trainer):
 
         #　random初始化种群
         if self.args.initialize_mode == "random":
-            self.__initialize_population_Random()
+            # 如果random_population已存在则不再初始化
+            if not os.path.exists("random_population.txt"):
+                self.__initialize_population_Random()
+            else:
+                print("*" * 35, "random_population DONE", "*" * 35)
         # rl初始化种群
         elif self.args.initialize_mode == "RL":
-            self.__initialize_population_RL()
+            # 如果RL_population已存在则不再初始化
+            if not os.path.exists("RL_population.txt"):
+                self.__initialize_population_RL()
+            else:
+                print("*" * 35, "RL_population DONE", "*" * 35)
 
     def __initialize_population＿RL(self):
         print("\n\n=====  Reinforcement Learning initialize the populations =====")  # 随机初始化种群
@@ -172,9 +180,11 @@ class Evolution_Trainer(Trainer,RL_Trainer):
             child_list = self._crossover(parents_list)
             # 变异
             child_list = self._mutation(child_list)
-            #　更新
+            # 更新
             best_acc, population, accuracies = self._updating(child_list, population, accuracies)
+
             self.cycles = self.cycles - 1
+
             once_evolution_train_end_time = time.time()
 
             print("the", self.cycle, "epcoh evlution train time: ",
@@ -190,7 +200,7 @@ class Evolution_Trainer(Trainer,RL_Trainer):
 
         print("all evalution train time list: ", self.ev_train_time)
         print("all best population acc list: ", self.ev_acc)
-        experiment_data_save("evolution_train_"+self.args.updating_mode + ".txt", self.ev_train_time, self.ev_acc)
+        experiment_data_save("evolution_train_" + self.args.initialize_mode + "_" + self.args.updating_mode + ".txt", self.ev_train_time, self.ev_acc)
 
         end_evolution_time = time.time()
         total_evolution_time = end_evolution_time - start_evolution_time
@@ -231,7 +241,9 @@ class Evolution_Trainer(Trainer,RL_Trainer):
             parent_index = np.random.choice(index_list, self.sample_size, replace=False, p=fitness_probility)
             for index in parent_index:
                 parent_list.append(population[index].copy())
+
         print("the parent_list:\n", parent_list)
+
         return parent_list, population, accuracies
 
     def _crossover(self, parents):
@@ -292,9 +304,6 @@ class Evolution_Trainer(Trainer,RL_Trainer):
                 # 将child与acc_score加入种群population,accuracies list　
                 accuracies.append(child_acc)
                 population.append(child)
-                # 　cycles结束，从population中挑选最优个体
-                if self.cycles % self.args.eval_cycle == 0:
-                    self.derive_from_population()
                 # Remove oldest individual (Aging/Regularized evolution)
                 population.popleft()  # 从population　list　中剔除最左边的个体基因
                 accuracies.popleft()  # 同时剔除其acc_score 准确度
@@ -305,8 +314,8 @@ class Evolution_Trainer(Trainer,RL_Trainer):
                       np.median(accuracies),
                       np.max(accuracies))
 
-        elif self.args.updating_mode == "none-age":
-            print("none-age updating")
+        elif self.args.updating_mode == "none_age":
+            print("none_age updating")
             # 选择child_list中比population中fitnesss高的更新
             # 计算child_list中fitness
             for child in child_list:
@@ -322,9 +331,6 @@ class Evolution_Trainer(Trainer,RL_Trainer):
 
             print("cycle: ", self.cycle, "populations:\n", population)
             print("cycle: ", self.cycle, "accuracies:\n", accuracies)
-            # 每训练self.eval_cycle次，从population中挑选最优个体
-            if self.cycles % self.args.eval_cycle == 0:
-                self.derive_from_population()
 
             print("[POPULATION STATS] Mean/Median/Best: ",
                   np.mean(accuracies),
@@ -335,5 +341,3 @@ class Evolution_Trainer(Trainer,RL_Trainer):
         #ev每次训练后选取种群中最好acc
         return max(accuracies), population, accuracies
 
-    def derive(self, sample_num=None):
-        self.derive_from_population()

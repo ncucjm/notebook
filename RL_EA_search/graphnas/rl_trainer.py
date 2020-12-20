@@ -107,11 +107,19 @@ class RL_Trainer(object):
         return gnn
 
     def train(self, action_list):
-        # Training the controller parameters theta
-        self.train_controller()
-        print("*" * 35, "using controller search the initialize population", "*" * 35)
-        populations, accuracies = self.derive(self.args.population_size, action_list)
-        print("*" * 35, "the search DONE", "*" * 35)
+        model_path = "/home/jerry/experiment/RL_nas/graphnas/Citeseer"
+        # Training the controller
+        if not os.listdir(model_path):# 判断保存controler模型的文件夹是否为空，为空返回False,反之为Ture
+            self.train_controller()
+            print("*" * 35, "using controller search the initialize population", "*" * 35)
+            populations, accuracies = self.derive(self.args.population_size, action_list)
+            print("*" * 35, "the search DONE", "*" * 35)
+            self.save_model()
+        else:
+            self.load_model() # 每次加载step序号最大controler模型search
+            print("*" * 35, "using controller search the initialize population", "*" * 35)
+            populations, accuracies = self.derive(self.args.population_size, action_list)
+            print("*" * 35, "the search DONE", "*" * 35)
         return populations, accuracies
 
     def derive(self, sample_num, action_list):
@@ -167,6 +175,38 @@ class RL_Trainer(object):
                 population.append(single)
 
             return population, accuracies
+
+    def save_model(self):
+
+        torch.save(self.controller.state_dict(), self.controller_path)
+        torch.save(self.controller_optim.state_dict(), self.controller_optimizer_path)
+
+        logger.info(f'[*] SAVED: {self.controller_path}')
+
+        epochs, shared_steps, controller_steps = self.get_saved_models_info()
+
+        for epoch in epochs[:-self.args.max_save_num]:
+            paths = glob.glob(
+                os.path.join(self.args.dataset, f'*_epoch{epoch}_*.pth'))
+
+            for path in paths:
+                utils.remove_file(path)
+
+    def load_model(self):
+        epochs, shared_steps, controller_steps = self.get_saved_models_info()
+
+        if len(epochs) == 0:
+            logger.info(f'[!] No checkpoint found in {self.args.dataset}...')
+            return
+
+        self.epoch = self.start_epoch = max(epochs)
+        self.controller_step = max(controller_steps)
+
+        self.controller.load_state_dict(
+            torch.load(self.controller_path))
+        self.controller_optim.load_state_dict(
+            torch.load(self.controller_optimizer_path))
+        logger.info(f'[*] LOADED: {self.controller_path}')
 
     def get_reward(self, gnn_list, entropies, hidden):
         """
@@ -306,54 +346,6 @@ class RL_Trainer(object):
             return
         logger.info(f'eval | {gnn} | reward: {reward:8.2f} | scores: {scores:8.2f}')
 
-    def derive_from_history(self):
-        with open(self.args.dataset + "_" + self.args.search_mode +
-                  self.args.submanager_log_file, "r") as f:
-            lines = f.readlines()
-
-        results = []
-        best_val_score = "0"
-        for line in lines:
-            actions = line[:line.index(";")]
-            val_score = line.split(";")[-1]
-            results.append((actions, val_score))
-        results.sort(key=lambda x: x[-1], reverse=True)
-        best_structure = ""
-        best_score = 0
-        for actions in results[:5]:
-            actions = eval(actions[0])
-            np.random.seed(123)
-            torch.manual_seed(123)
-            torch.cuda.manual_seed_all(123)
-            val_scores_list = []
-            # exp
-            #for i in range(20):
-            # test
-            for i in range(1):
-                val_acc, test_acc = self.submodel_manager.evaluate(actions)
-                val_scores_list.append(val_acc)
-
-            tmp_score = np.mean(val_scores_list)
-            if tmp_score > best_score:
-                best_score = tmp_score
-                best_structure = actions
-
-        print("best structure:" + str(best_structure))
-        # train from scratch to get the final score
-        np.random.seed(123)
-        torch.manual_seed(123)
-        torch.cuda.manual_seed_all(123)
-        test_scores_list = []
-        # test
-        for i in range(1):
-        # exp
-        #for i in range(100):
-            # manager.shuffle_data()
-            val_acc, test_acc = self.submodel_manager.evaluate(best_structure)
-            test_scores_list.append(test_acc)
-        print(f"best results: {best_structure}: {np.mean(test_scores_list):.8f} +/- {np.std(test_scores_list)}")
-        return best_structure
-
     @property
     def model_info_filename(self):
         return f"{self.args.dataset}_{self.args.search_mode}_{self.args.format}_results.txt"
@@ -386,34 +378,6 @@ class RL_Trainer(object):
 
         return epochs, shared_steps, controller_steps
 
-    def save_model(self):
 
-        torch.save(self.controller.state_dict(), self.controller_path)
-        torch.save(self.controller_optim.state_dict(), self.controller_optimizer_path)
 
-        logger.info(f'[*] SAVED: {self.controller_path}')
 
-        epochs, shared_steps, controller_steps = self.get_saved_models_info()
-
-        for epoch in epochs[:-self.args.max_save_num]:
-            paths = glob.glob(
-                os.path.join(self.args.dataset, f'*_epoch{epoch}_*.pth'))
-
-            for path in paths:
-                utils.remove_file(path)
-
-    def load_model(self):
-        epochs, shared_steps, controller_steps = self.get_saved_models_info()
-
-        if len(epochs) == 0:
-            logger.info(f'[!] No checkpoint found in {self.args.dataset}...')
-            return
-
-        self.epoch = self.start_epoch = max(epochs)
-        self.controller_step = max(controller_steps)
-
-        self.controller.load_state_dict(
-            torch.load(self.controller_path))
-        self.controller_optim.load_state_dict(
-            torch.load(self.controller_optimizer_path))
-        logger.info(f'[*] LOADED: {self.controller_path}')

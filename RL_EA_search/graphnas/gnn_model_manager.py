@@ -118,8 +118,8 @@ class CitationGNNManager(object):
             else:
                 raise e
         reward = self.reward_manager.get_reward(val_acc)
-        # 模型保存
-        self.record_action_info(origin_action, reward, val_acc)
+        # 模型gnn, reward, val_acc
+        # self.record_action_info(origin_action, reward, val_acc)
 
         return reward, val_acc
 

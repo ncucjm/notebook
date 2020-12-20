@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 def experiment_data_read(name):
     path = path_get()[1]
-    with open(path + "/" +name, "r") as f:
+    with open(path + "/" + name, "r") as f:
         all_data = f.readlines()
         time_data = all_data[0][:-1]
         acc_data = all_data[1]
@@ -21,7 +21,7 @@ def path_get():
     return father_path, current_path
 
 if __name__=="__main__":
-   name = ["controler_train.txt", "controler_search.txt", "evolution_train.txt"]
+   name = ["controler_train.txt", "controler_search.txt", "evolution_train_none_age.txt"]
    time_data1, acc_data1 = experiment_data_read(name[0])
    time_data2, acc_data2 = experiment_data_read(name[1])
    time_data3, acc_data3 = experiment_data_read(name[2])

@@ -2,10 +2,7 @@ import time
 import torch
 import argparse
 import numpy as np
-from graphnas.rl_trainer import RL_Trainer
 import graphnas.utils.tensor_utils as utils
-from graphnas.gs_trainer import GridSearch_Trainer
-from graphnas.rs_trainer import RandomSearch_Trainer
 from graphnas.evolution_trainer import Evolution_Trainer
 
 def build_args():
@@ -24,32 +21,52 @@ def register_default_args(parser):
     parser.add_argument('--random_seed', type=int, default=123)
     parser.add_argument("--cuda", type=bool, default=True, required=False,
                         help="run in cuda mode")
-    parser.add_argument('--max_save_num', type=int, default=3)
     # EA
-    parser.add_argument('--selection_mode', type=str, default='wheel', help='random, wheel')
-    parser.add_argument('--crossover_mode', type=str, default='point', help='point, none')
-    parser.add_argument('--mutation_mode', type=str, default='point_p', help='point_p, point_none')
-    parser.add_argument('--mutation_p', type=float, default=0.2, help='[0-1]')
-    parser.add_argument('--updating_mode', type=str, default="none-age", help='age,none-age')
+    # RL + EV2
+
+
+
+    # initialize_method
     parser.add_argument('--initialize_mode', type=str, default="RL", help='random,RL')
+    # evolution_method
+    # none_age
+    method = {"selection_mode": "wheel",
+                "crossover_mode": "point",
+                "mutation_mode": "point_p",
+                "mutation_p": 0.2,
+                "updating_mode": "none_age"}
+    # age
+    # method = {"selection_mode": "random",
+    #             "crossover_mode": "none",
+    #             "mutation_mode": "point_none",
+    #             "mutation_p": 0,
+    #             "updating_mode": "age"}
+
+    parser.add_argument('--selection_mode', type=str, default=method["selection_mode"], help='random, wheel')
+    parser.add_argument('--crossover_mode', type=str, default=method["crossover_mode"], help='point, none')
+    parser.add_argument('--mutation_mode', type=str, default=method["mutation_mode"], help='point_p, point_none')
+    parser.add_argument('--mutation_p', type=float, default=method["mutation_p"], help='[0-1]')
+    parser.add_argument('--updating_mode', type=str, default=method["updating_mode"], help='age,none_age')
+
 
     # test
+    #parser.add_argument('--cycles', type=int, default=2, help='Evolution cycles')
+    # exp
+    # ev_train number
     parser.add_argument('--cycles', type=int, default=2, help='Evolution cycles')
-    # default
-    #parser.add_argument('--cycles', type=int, default=1000, help='Evolution cycles')
 
     #训练多少次，从population中挑选出最优个体
-    parser.add_argument('--eval_cycle', type=int, default=100,
-                        help='Evaluate best model every x iterations. def:100')
+    # parser.add_argument('--eval_cycle', type=int, default=100,
+    #                     help='Evaluate best model every x iterations. def:100')
     # test
+    #parser.add_argument('--population_size', type=int, default=3)
+    # exp　由population_size,决定了使用controler选取多少个gnn 与使用random初始化选取gnn的数目
     parser.add_argument('--population_size', type=int, default=3)
-    # default
-    #parser.add_argument('--population_size', type=int, default=100)
 
     #　test
+    #parser.add_argument('--sample_size', type=int, default=2, help='Sample size for tournament selection')
+    # exp 选择多少个父母染色体进行交叉与变异,aging update可以是基数，none-aging　updating 必须是偶数
     parser.add_argument('--sample_size', type=int, default=2, help='Sample size for tournament selection')
-    # default
-    # parser.add_argument('--sample_size', type=int, default=25, help='Sample size for tournament selection')
 
     # controller
     parser.add_argument('--save_epoch', type=int, default=2)
@@ -57,14 +74,6 @@ def register_default_args(parser):
     parser.add_argument('--load_path', type=str, default='')
     parser.add_argument('--search_mode', type=str, default='macro')
     parser.add_argument('--format', type=str, default='two')
-
-    ######################
-    # all_training epoch:
-    # test
-    parser.add_argument('--max_epoch', type=int, default=1)
-    # exp
-    #parser.add_argument('--max_epoch', type=int, default=10)
-    ######################
 
     parser.add_argument('--shared_initial_step', type=int, default=0)
     parser.add_argument('--batch_size', type=int, default=64)
@@ -79,11 +88,11 @@ def register_default_args(parser):
     # training controller_max_step
 
     # test
-    parser.add_argument('--controller_max_step', type=int, default=5,
-                        help='step for controller parameters')
-    # exp
-    # parser.add_argument('--controller_max_step', type=int, default=100,
+    # parser.add_argument('--controller_max_step', type=int, default=5,
     #                     help='step for controller parameters')
+    # exp contronler train number
+    parser.add_argument('--controller_max_step', type=int, default=3,
+                        help='step for controller parameters')
     #######################
 
     parser.add_argument('--controller_optim', type=str, default='adam')
@@ -92,14 +101,6 @@ def register_default_args(parser):
     parser.add_argument('--controller_grad_clip', type=float, default=0)
     parser.add_argument('--tanh_c', type=float, default=2.5)
     parser.add_argument('--softmax_temperature', type=float, default=5.0)
-
-    ####################
-    # derive the gnn num
-    # test
-    parser.add_argument('--derive_num_sample', type=int, default=1)
-    # exp
-    #parser.add_argument('--derive_num_sample', type=int, default=100)
-    ####################
 
     parser.add_argument('--derive_finally', type=bool, default=True)
     parser.add_argument('--derive_from_history', type=bool, default=True)
@@ -133,10 +134,6 @@ def register_default_args(parser):
     parser.add_argument('--submanager_log_file',
                         type=str,
                         default=f"sub_manager_logger_file_{time.time()}.txt")
-    # RL_initialize_population
-    parser.add_argument('--population_k', type=int, default=2)
-
-
 
 def main(args):  # pylint:disable=redefined-outer-name
 
