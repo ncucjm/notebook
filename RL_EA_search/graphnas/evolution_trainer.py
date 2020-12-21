@@ -57,6 +57,8 @@ class Evolution_Trainer(Trainer,RL_Trainer):
         self.population = []
         self.accuracies = []
         self.population_size = args.population_size
+        self.population_history = []
+        self.accuracies_history = []
         self.sample_size = args.sample_size
         self.cycles = args.cycles
         self.init_time = 0
@@ -106,6 +108,7 @@ class Evolution_Trainer(Trainer,RL_Trainer):
             print("individual:", individual, " val_score:", ind_acc)
             self.accuracies.append(ind_acc) # 将种群中每个个体的acc_scores存入accuraies　list
             self.population.append(individual) # 将种群中每个个体的基因存入　populations list
+
             once_random_initialize_end_time = time.time()
 
             print("the", epoch, "epcoh random initialize time: ",
@@ -125,7 +128,9 @@ class Evolution_Trainer(Trainer,RL_Trainer):
         print("===== Random initialize populations DONE ====")
         print("all random initialize time list: ", self.ev_random_initial_time)
         print("all random initialize population acc list: ", self.ev_random_acc)
+
         experiment_data_save("random_initialize.txt", self.ev_random_initial_time, self.ev_random_acc)
+
         population_save("random_population.txt", self.population, self.accuracies)
 
     def derive_from_population(self):
@@ -163,6 +168,11 @@ class Evolution_Trainer(Trainer,RL_Trainer):
         start_evolution_time = time.time()
 
         population, accuracies = population_read(self.args.initialize_mode)
+
+        # 将初始化的种群和fitness加入history　list
+        self.population_history = population.copy()
+        self.accuracies_history = accuracies.copy()
+
         population = deque(population)
         accuracies = deque(accuracies)
 
@@ -304,9 +314,15 @@ class Evolution_Trainer(Trainer,RL_Trainer):
                 # 将child与acc_score加入种群population,accuracies list　
                 accuracies.append(child_acc)
                 population.append(child)
+                #　将child child_fitness加入历史
+                self.population_history.append(child)
+                self.accuracies_history.append(child_acc)
+
                 # Remove oldest individual (Aging/Regularized evolution)
                 population.popleft()  # 从population　list　中剔除最左边的个体基因
                 accuracies.popleft()  # 同时剔除其acc_score 准确度
+
+
                 print("cycle: ", self.cycle, "populations:\n", population)
                 print("cycle: ", self.cycle, "accuracies:\n", accuracies)
                 print("[POPULATION STATS] Mean/Median/Best: ",
@@ -339,5 +355,5 @@ class Evolution_Trainer(Trainer,RL_Trainer):
 
 
         #ev每次训练后选取种群中最好acc
-        return max(accuracies), population, accuracies
+        return max(self.accuracies_history), population, accuracies
 
