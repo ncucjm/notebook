@@ -1,0 +1,7 @@
+['generalized_linear', 'mean', 'relu6', 4, 64, 'cos', 'max', 'tanh', 6, 6];0.214
+['const', 'mean', 'relu6', 2, 4, 'gcn', 'max', 'elu', 2, 6];0.216
+['generalized_linear', 'sum', 'elu', 2, 32, 'generalized_linear', 'mean', 'softplus', 1, 6];0.652
+['generalized_linear', 'mean', 'softplus', 2, 32, 'generalized_linear', 'mean', 'softplus', 1, 6];0.25
+['generalized_linear', 'sum', 'elu', 4, 64, 'cos', 'max', 'tanh', 6, 6];0.43
+['generalized_linear', 'sum', 'elu', 2, 32, 'cos', 'max', 'tanh', 6, 6];0.442
+['generalized_linear', 'sum', 'elu', 4, 64, 'generalized_linear', 'mean', 'softplus', 1, 6];0.664

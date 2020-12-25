@@ -1,1 +1,0 @@
-['generalized_linear', 'mean', 'relu6', 4, 64, 'cos', 'max', 'tanh', 6, 6];0.224
