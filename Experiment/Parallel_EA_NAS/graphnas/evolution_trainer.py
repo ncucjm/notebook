@@ -34,13 +34,14 @@ class Evolution_Trainer(Trainer):
         self.ev_random_initial_time = []
         self.ev_random_acc = []
 
+        self.__initialize_population_Random()
         #　random初始化种群
-        if self.args.initialize_mode == "random":
-            # 如果random_population已存在则不再初始化
-            if not os.path.exists("random_population.txt"):
-                self.__initialize_population_Random()
-            else:
-                print("*" * 35, "random_population DONE", "*" * 35)
+        # if self.args.initialize_mode == "random":
+        #     # 如果random_population已存在则不再初始化
+        #     if not os.path.exists("random_population.txt"):
+        #         self.__initialize_population_Random()
+        #     else:
+        #         print("*" * 35, "random_population DONE", "*" * 35)
 
     def __initialize_population_Random(self):
         print("\n\n===== Random initialize the populations =====")#　随机初始化种群
@@ -78,8 +79,11 @@ class Evolution_Trainer(Trainer):
         print("all random initialize time list: ", self.ev_random_initial_time)
         print("all random initialize population acc list: ", self.ev_random_acc)
 
-        self.experiment_data_save("random_initialize.txt", self.ev_random_initial_time, self.ev_random_acc)
-        self.population_save("random_population.txt", self.population, self.accuracies)
+        self.experiment_data_save(self.args.initialize_mode + "_" +
+                                  self.args.dataset+"_" + self.args.evolution_sesd_name +".txt",
+                                  self.ev_random_initial_time, self.ev_random_acc)
+        self.population_save(self.args.dataset+"_" + self.args.evolution_sesd_name + "_population.txt",
+                             self.population, self.accuracies)
 
     def derive_from_population(self):
 
@@ -127,7 +131,7 @@ class Evolution_Trainer(Trainer):
 
     def population_read(self, name):
         path = self.path_get()[1]
-        with open(path + "/" + name + "_population.txt", "r") as f:
+        with open(path + "/" + name, "r") as f:
             all_data = f.readlines()
             population = all_data[0][:-1]
             accuracies = all_data[1]
@@ -146,7 +150,7 @@ class Evolution_Trainer(Trainer):
     def train(self):
         print("\n\n===== Evolution ====")
         start_evolution_time = time.time()
-        population, accuracies = self.population_read(self.args.initialize_mode)
+        population, accuracies = self.population_read(self.args.dataset + "_" + self.args.evolution_sesd_name+"_population.txt")
         # 将初始化的种群和fitness加入history　list
         self.population_history = population.copy()
         self.accuracies_history = accuracies.copy()
@@ -186,7 +190,8 @@ class Evolution_Trainer(Trainer):
 
         print("all evalution train time list: ", self.ev_train_time)
         print("all best population acc list: ", self.ev_acc)
-        self.experiment_data_save("evolution_train_" + self.args.initialize_mode + "_" + self.args.updating_mode + ".txt", self.ev_train_time, self.ev_acc)
+        self.experiment_data_save(self.args.dataset+"_" + self.args.evolution_sesd_name +".txt",
+                                  self.ev_train_time, self.ev_acc)
 
         end_evolution_time = time.time()
         total_evolution_time = end_evolution_time - start_evolution_time
@@ -328,7 +333,6 @@ class Evolution_Trainer(Trainer):
                   np.mean(accuracies),
                   np.median(accuracies),
                   np.max(accuracies))
-
 
         #ev每次训练后选取种群中最好acc
         return max(self.accuracies_history), population, accuracies
